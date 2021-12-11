@@ -1,28 +1,72 @@
 #include <Stepper.h>
 #include <Ultrasonic.h>
+#include <SPI.h>
 #include <NRFLite.h>
 
-struct pair {
+struct Pair {
   int a;
   int b;
 };
 
-const int maxSpeed = 590;
-const int stepsPerRevolution = 64;
+struct RadioData // Any packet up to 32 bytes can be sent.
+{
+    uint8_t radioId;
+};
 
-Stepper leftMotor = Stepper(stepsPerRevolution, 5, 6, 7, 8);
-Stepper rightMotor = Stepper(stepsPerRevolution, 1, 2, 3, 4);
+const int maxSpeed = 100;
+const int stepsPerRevolution = 64;
+const int temperaturePin = A0;
+
+const static uint8_t radioId = 0;    // This radio's id.
+//const static uint8_t receiverId = 0; // Id of the radio we will transmit to.
+const static uint8_t CEPin = 9;
+const static uint8_t CSNPin = 10;
+
+NRFLite radio;
+RadioData radioData;
+
+Stepper leftMotor = Stepper(stepsPerRevolution, 6, 8, 7, A0);
+Stepper rightMotor = Stepper(stepsPerRevolution, 2, 4, 3, 5);
 
 void setup() {
   // put your setup code here, to run once:
-  leftMotor.setSpeed(100);
-  rightMotor.setSpeed(100);    
+  Serial.begin(9600);
+
+  
+  if (!radio.init(radioId, CEPin, CSNPin))
+  {
+    Serial.println("Cannot communicate with radio");
+    while (1); // Wait here forever.
+  }
+  
+  
+  leftMotor.setSpeed(400);
+  rightMotor.setSpeed(400);
+
+  
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  leftMotor.step(1);
-  rightMotor.step(1);
+  leftMotor.step(-8);
+  rightMotor.step(8);
+  Serial.println(readTemperature());
+}
+
+int readTemperature(){
+  return ((5 * analogRead(temperaturePin) / 1024) - 0.5) * 100;
+}
+  
+void checkRadio() {
+  while (radio.hasData())
+  {
+    radio.readData(&radioData); // Note how '&' must be placed in front of the variable name.
+
+    String msg = "Radio ";
+    msg += radioData.radioId;
+
+    Serial.println(msg);
+  }
 }
 
 void stepMotorAtSpeed(Stepper motor, int motorSpeed, int steps){
@@ -36,8 +80,8 @@ void stepMotorAtSpeed(Stepper motor, int motorSpeed, int steps){
   }
 }
 
-struct pair calculateMotorSpeeds(float x, float y){
-  struct pair speeds;
+struct Pair calculateMotorSpeeds(float x, float y){
+  struct Pair speeds;
   
   Serial.println("Readings");
   Serial.println(x);
@@ -96,10 +140,4 @@ struct pair calculateMotorSpeeds(float x, float y){
   Serial.println(speeds.b);
   Serial.println(" ");
   return speeds;
-}
-
-void checkSerial() {
-  if (Serial.available() > 0){
-    byte message = Serial.read();
-  }
 }
