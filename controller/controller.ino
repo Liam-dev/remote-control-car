@@ -1,6 +1,11 @@
-#include "SPI.h"
+#include "SPI.h" 
 #include "NRFLite.h"
 #include "LiquidCrystal.h"
+
+const int buzzer = 2;
+
+int distance, temperature;
+int period = 500, time_now = 0;
 
 struct Pair {
   int a;
@@ -33,17 +38,48 @@ void setup()
 {
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
+  pinMode(buzzer, OUTPUT);
   
   Serial.begin(9600);
 
   lcd.begin(16, 2);
-  lcd.print("Hello World!");
+  
   
   _radio.init(11, 9, 10); // Set radio to Id = 1, along with the CE and CSN pins
 }
 
 void loop()
 {
+  temperature = _data.a;
+  distance = _data.b;
+  time_now = millis();
+
+
+
+  noTone(buzzer);
+  if(distance < 20 && distance > 5)
+  {
+   tone(buzzer, distance*40);
+   while(millis() < time_now + period)
+    {
+      //wait 500 ms
+    }
+   noTone(buzzer);
+   while(millis() < time_now + period)
+    {
+      //wait 500 ms
+    }
+  }
+  else if(distance < 5)
+  {
+   tone(buzzer, 2000);
+  }
+  else
+  {
+    noTone(buzzer);
+  }
+
+  
    //_data++;
    struct Pair joystick = getJoystickInput();
    //Serial.println(joystick);
@@ -57,9 +93,11 @@ void loop()
     {
         //Serial.println("success");
         _radio.readData(&_data);
-        Serial.println(_data.a);
+        lcd.clear();
+        lcd.print(distance);
     }
    delay(50);
+   
 }
 
 struct Pair getJoystickInput(){
