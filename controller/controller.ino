@@ -15,12 +15,12 @@ struct RadioData // Any packet up to 32 bytes can be sent.
 const int joystickPinX = A0;
 const int joystickPinY = A1;
 
-const static uint8_t radioId = 1;    // This radio's id.
+const static uint8_t radioId = 11;    // This radio's id.
 const static uint8_t receiverId = 0; // Id of the radio we will transmit to.
 const static uint8_t CEPin = 9;
 const static uint8_t CSNPin = 10;
 
-int _data;
+Pair _data;
 
 LiquidCrystal lcd(4, 3, 5, 7, 6, 8);
 
@@ -39,7 +39,7 @@ void setup()
   lcd.begin(16, 2);
   lcd.print("Hello World!");
   
-  _radio.init(1, 9, 10); // Set radio to Id = 1, along with the CE and CSN pins
+  _radio.init(11, 9, 10); // Set radio to Id = 1, along with the CE and CSN pins
 }
 
 void loop()
@@ -52,12 +52,12 @@ void loop()
    //Serial.print(joystick.a);
    //Serial.print(" ");
    //Serial.println(joystick.b);
-   _radio.send(0, &joystick, sizeof(joystick)); // Send data to the radio with Id = 0
+   _radio.send(10, &joystick, sizeof(joystick)); // Send data to the radio with Id = 0
    while(_radio.hasData())
     {
         //Serial.println("success");
         _radio.readData(&_data);
-        Serial.println(_data);
+        Serial.println(_data.a);
     }
    delay(50);
 }

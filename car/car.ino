@@ -8,24 +8,31 @@ struct Pair {
   int b;
 };
 
-const int maxSpeed = 100;
+const int maxSpeed = 400;
 const int stepsPerRevolution = 64;
-const int temperaturePin = A0;
+const int temperaturePin = A1;
 
-const static uint8_t radioId = 0;    // This radio's id.
+// Radio
+const static uint8_t radioId = 10;    // This radio's id.
 //const static uint8_t receiverId = 0; // Id of the radio we will transmit to.
 const static uint8_t CEPin = 9;
 const static uint8_t CSNPin = 10;
 
 NRFLite radio;
-struct Pair radioData;
-int temp;
+Pair radioData;
+Pair sensorReadings;
+unsigned long timeSinceLastReading;
+Pair motorSpeeds;
 
 Stepper leftMotor = Stepper(stepsPerRevolution, 6, 8, 7, A0);
 Stepper rightMotor = Stepper(stepsPerRevolution, 2, 4, 3, 5);
 
+Ultrasonic ultrasonicSensor(A2);
+
 void setup() {
   // put your setup code here, to run once:
+  pinMode(temperaturePin, INPUT);
+  
   Serial.begin(9600);
 
   
@@ -34,53 +41,76 @@ void setup() {
     Serial.println("Cannot communicate with radio");
     while (1); // Wait here forever.
   }
-  
-  
-  leftMotor.setSpeed(400);
-  rightMotor.setSpeed(400);
-
+  Serial.println("Radio connected");
   
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //leftMotor.step(-8);
-  //rightMotor.step(8);
-  //Serial.println(readTemperature());
   checkRadio();
-  temp = readTemperature();
-  radio.send(1, &temp, sizeof(temp));
+  
+  if (millis() - timeSinceLastReading > 500){
+    timeSinceLastReading = millis();
+    sensorReadings.a = readTemperature();
+    Serial.println(sensorReadings.a);
+    sensorReadings.b = ultrasonicSensor.MeasureInCentimeters();
+    radio.send(11, &sensorReadings, sizeof(sensorReadings));
+  }
 }
 
 int readTemperature(){
-  return ((5 * analogRead(temperaturePin) / 1024) - 0.5) * 100;
+  //return analogRead(temperaturePin);
+  return ((5 * (double)analogRead(temperaturePin) / 1024) - 0.5) * 100;
 }
-  
+
 void checkRadio() {
   while (radio.hasData())
   {
     radio.readData(&radioData); // Note how '&' must be placed in front of the variable name.
 
-    
-    
-    Serial.print(radioData.a);
-    Serial.print(" ");
-    Serial.println(radioData.b);
+    //Serial.print(radioData.a);
+    //Serial.print(" ");
+    //Serial.println(radioData.b);
   }
 
-  struct Pair speeds = calculateMotorSpeeds(radioData);
+  Pair newMotorSpeeds = calculateMotorSpeeds(radioData);
+  //Serial.print(-newMotorSpeeds.a);
+  //Serial.print(" ");
+  //Serial.println(newMotorSpeeds.b);
 
-  //leftMotor.setSpeed(abs(400));
-  //rightMotor.setSpeed(abs(400));
-  //leftMotor.step(-8);
-  //rightMotor.step(8);
-  //stepMotorAtSpeed(leftMotor, speeds.a, 8);
-  //stepMotorAtSpeed(rightMotor, speeds.b, 8); 
+  
+
+  /*
+  if (abs(newMotorSpeeds.a - motorSpeeds.a) > 1){
+    leftMotor.setSpeed(abs(newMotorSpeeds.a));
+  }
+
+  if (abs(newMotorSpeeds.b - motorSpeeds.b) > 1){
+    rightMotor.setSpeed(abs(newMotorSpeeds.b));
+  }
+  */
+  
+  leftMotor.setSpeed(abs(newMotorSpeeds.a));
+  rightMotor.setSpeed(abs(newMotorSpeeds.b));
+
+  if (newMotorSpeeds.a < 0){
+    leftMotor.step(2);
+  }
+  else if (newMotorSpeeds.a > 0){
+    leftMotor.step(-2);
+  }
+
+  if (newMotorSpeeds.b < 0){
+    rightMotor.step(-2);
+  }
+  else if (newMotorSpeeds.b > 0){
+    rightMotor.step(2);
+  }
+  
+  //motorSpeeds = newMotorSpeeds;
 }
 
-void stepMotorAtSpeed(Stepper motor, int motorSpeed, int steps){
-  motor.setSpeed(abs(motorSpeed));
-  
+void stepMotor(Stepper motor, int motorSpeed, int steps){
   if (motorSpeed < 0){
     motor.step(-steps);
   }
@@ -89,35 +119,28 @@ void stepMotorAtSpeed(Stepper motor, int motorSpeed, int steps){
   }
 }
 
-struct Pair calculateMotorSpeeds(struct Pair input){
-  struct Pair speeds;
-  int x = input.a;
-  int y = input.b;
+Pair calculateMotorSpeeds(struct Pair input){
+  Pair speeds;
+  int x = input.b;
+  int y = input.a;
 
-  /*
-  Serial.println("Readings");
-  Serial.println(x);
-  Serial.println(y);
-  Serial.println(" ");
-  */
-  
-  float turn = map(x, 0, 1023, maxSpeed, -maxSpeed) - 9;
-  float forward = map(y, 0, 1023, maxSpeed, -maxSpeed) + 5;
+  float turn = map(x, 0, 1023, -maxSpeed, maxSpeed) + 7;
+  float forward = map(y, 0, 1023, -maxSpeed, maxSpeed)-2;
 
-  /*
-  Serial.println("Values");
-  Serial.println(turn);
-  Serial.println(forward);
-  Serial.println(" ");
-  */
+  //Serial.print(turn);
+  //Serial.print(" ");
+  //Serial.println(forward);
   
-  if (abs(forward) < 2){
+  if (abs(forward) < 7){
     forward = 0;
   }
-  if (abs(turn) < 2){
+  if (abs(turn) < 7){
     turn = 0;
   }
 
+  //Serial.print(turn);
+  //Serial.print(" ");
+  //Serial.println(forward);
 
   int maximum = maxSpeed;
   int total = forward + turn;
@@ -149,13 +172,6 @@ struct Pair calculateMotorSpeeds(struct Pair input){
       speeds.b = difference;
     }   
   }
-
-  
-  //Serial.println("Speeds");
-  //Serial.println(speeds.a);
-  //Serial.println(speeds.b);
-  //Serial.println(" ");
-  
   
   return speeds;
 }
