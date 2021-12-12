@@ -1,6 +1,6 @@
-#include <LiquidCrystal.h>
-#include <SPI.h>
-#include <NRFLite.h>
+#include "SPI.h"
+#include "NRFLite.h"
+#include "LiquidCrystal.h"
 
 struct Pair {
   int a;
@@ -20,48 +20,46 @@ const static uint8_t receiverId = 0; // Id of the radio we will transmit to.
 const static uint8_t CEPin = 9;
 const static uint8_t CSNPin = 10;
 
-NRFLite radio;
-RadioData radioData;
+int _data;
 
 LiquidCrystal lcd(4, 3, 5, 7, 6, 8);
 
 unsigned long lastButtonPress;
 
-void setup() {
-  // put your setup code here, to run once:
+NRFLite _radio;
+struct Pair joystick;
+
+void setup()
+{
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
-  //pinMode(2, INPUT_PULLUP);
-  //attachInterrupt(digitalPinToInterrupt(2), buttonPressed, FALLING);
-
+  
   Serial.begin(9600);
 
   lcd.begin(16, 2);
   lcd.print("Hello World!");
-
-  if (!radio.init(radioId, CEPin, CSNPin))
-  {
-    Serial.println("Cannot communicate with radio");
-    while (1); // Wait here forever.
-  }
-    
-  radioData.radioId = radioId;
+  
+  _radio.init(1, 9, 10); // Set radio to Id = 1, along with the CE and CSN pins
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  struct Pair input = getJoystickInput();
-  
-  if (radio.send(receiverId, &radioData, sizeof(radioData))) // Note how '&' must be placed in front of the variable name.
-  {
-      Serial.println("...Success");
-  }
-  else
-  {
-      Serial.println("...Failed");
-  }
-  
-  delay(1000);
+void loop()
+{
+   //_data++;
+   struct Pair joystick = getJoystickInput();
+   //Serial.println(joystick);
+   
+   
+   //Serial.print(joystick.a);
+   //Serial.print(" ");
+   //Serial.println(joystick.b);
+   _radio.send(0, &joystick, sizeof(joystick)); // Send data to the radio with Id = 0
+   while(_radio.hasData())
+    {
+        //Serial.println("success");
+        _radio.readData(&_data);
+        Serial.println(_data);
+    }
+   delay(50);
 }
 
 struct Pair getJoystickInput(){
