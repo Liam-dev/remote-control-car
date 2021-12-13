@@ -63,8 +63,14 @@ void loop()
    while(_radio.hasData())
    {
         _radio.readData(&_data);
+     
         lcd.clear();
+        lcd.setCursor(0,0); //Prints Distance on first line of LCD Screen
+        lcd.print("Distance:" ); 
         lcd.print(distance);
+        lcd.setCursor(0,1); //Print Temperature on the Second Line of LCD Screen
+        lcd.print("Temperature:" );
+        lcd.print(temperature);
    }
    delay(50);
    
