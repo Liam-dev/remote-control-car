@@ -2,7 +2,7 @@
 #include "NRFLite.h"
 #include "LiquidCrystal.h"
 
-const int buzzer = 2;
+const int buzzerPin = 2;
 
 int distance, temperature;
 int period = 500, time_now = 0;
@@ -29,7 +29,7 @@ Pair _data;
 
 LiquidCrystal lcd(4, 3, 5, 7, 6, 8);
 
-unsigned long lastButtonPress;
+bool tonePlaying;
 
 NRFLite _radio;
 struct Pair joystick;
@@ -38,7 +38,7 @@ void setup()
 {
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
-  pinMode(buzzer, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
   
   Serial.begin(9600);
 
@@ -52,34 +52,10 @@ void loop()
 {
   temperature = _data.a;
   distance = _data.b;
-  time_now = millis();
 
+  obstacleDetection(distance)
 
-
-  noTone(buzzer);
-  if(distance < 20 && distance > 5)
-  {
-   tone(buzzer, distance*40);
-   while(millis() < time_now + period)
-    {
-      //wait 500 ms
-    }
-   noTone(buzzer);
-   while(millis() < time_now + period)
-    {
-      //wait 500 ms
-    }
-  }
-  else if(distance < 5)
-  {
-   tone(buzzer, 2000);
-  }
-  else
-  {
-    noTone(buzzer);
-  }
-
-  
+   
    //_data++;
    struct Pair joystick = getJoystickInput();
    //Serial.println(joystick);
@@ -100,6 +76,7 @@ void loop()
    
 }
 
+// Reads the values from the joystick
 struct Pair getJoystickInput(){
   struct Pair input;
   input.a = analogRead(joystickPinX);
@@ -107,8 +84,22 @@ struct Pair getJoystickInput(){
   return input;
 }
 
-void buttonPressed(){
-  lcd.clear();
-  lcd.print("Button Pressed");
-  Serial.println("Button Pressed");
+void obstacleDetection(int distance){
+  if (distance < 20 && distance > 5)
+  {
+    if (sin(millis() * 10) > 0){
+      tone(buzzerPin, distance*40);
+    }
+    else{
+      noTone(buzzerPin);
+    }
+  }
+  else if(distance < 5)
+  {
+   tone(buzzerPin, 2000);
+  }
+  else
+  {
+    noTone(buzzerPin);
+  }
 }

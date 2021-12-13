@@ -66,118 +66,119 @@ void loop() {
 int readTemperature() {
   //return analogRead(temperaturePin);
   return ((5 * ((double)analogRead(temperaturePin) / 1024)) - 0.5) * 100;
+}
 
-  // Check the radio for new input
-  void checkRadio() {
-    while (radio.hasData())
-    {
-      radio.readData(&radioData); // Note how '&' must be placed in front of the variable name.
+// Check the radio for new input
+void checkRadio() {
+  while (radio.hasData())
+  {
+    radio.readData(&radioData); // Note how '&' must be placed in front of the variable name.
 
-      //Serial.print(radioData.a);
-      //Serial.print(" ");
-      //Serial.println(radioData.b);
-    }
-
-    Pair newMotorSpeeds = calculateMotorSpeeds(radioData);
-    //Serial.print(-newMotorSpeeds.a);
+    //Serial.print(radioData.a);
     //Serial.print(" ");
-    //Serial.println(newMotorSpeeds.b);
+    //Serial.println(radioData.b);
+  }
+
+  Pair newMotorSpeeds = calculateMotorSpeeds(radioData);
+  //Serial.print(-newMotorSpeeds.a);
+  //Serial.print(" ");
+  //Serial.println(newMotorSpeeds.b);
 
 
 
-    /*
-      if (abs(newMotorSpeeds.a - motorSpeeds.a) > 1){
-      leftMotor.setSpeed(abs(newMotorSpeeds.a));
-      }
-
-      if (abs(newMotorSpeeds.b - motorSpeeds.b) > 1){
-      rightMotor.setSpeed(abs(newMotorSpeeds.b));
-      }
-    */
-
+  /*
+    if (abs(newMotorSpeeds.a - motorSpeeds.a) > 1){
     leftMotor.setSpeed(abs(newMotorSpeeds.a));
+    }
+
+    if (abs(newMotorSpeeds.b - motorSpeeds.b) > 1){
     rightMotor.setSpeed(abs(newMotorSpeeds.b));
+    }
+  */
 
-    if (newMotorSpeeds.a < 0) {
-      leftMotor.step(2);
-    }
-    else if (newMotorSpeeds.a > 0) {
-      leftMotor.step(-2);
-    }
+  leftMotor.setSpeed(abs(newMotorSpeeds.a));
+  rightMotor.setSpeed(abs(newMotorSpeeds.b));
 
-    if (newMotorSpeeds.b < 0) {
-      rightMotor.step(-2);
-    }
-    else if (newMotorSpeeds.b > 0) {
-      rightMotor.step(2);
-    }
-
-    //motorSpeeds = newMotorSpeeds;
+  if (newMotorSpeeds.a < 0) {
+    leftMotor.step(2);
+  }
+  else if (newMotorSpeeds.a > 0) {
+    leftMotor.step(-2);
   }
 
-  void stepMotor(Stepper motor, int motorSpeed, int steps) {
-    if (motorSpeed < 0) {
-      motor.step(-steps);
-    }
-    else if (motorSpeed > 0) {
-      motor.step(steps);
-    }
+  if (newMotorSpeeds.b < 0) {
+    rightMotor.step(-2);
+  }
+  else if (newMotorSpeeds.b > 0) {
+    rightMotor.step(2);
   }
 
-  // Calculates the speeds of two motors from the joystick input values
-  Pair calculateMotorSpeeds(struct Pair input) {
-    Pair speeds;
-    int x = input.b;
-    int y = input.a;
+  //motorSpeeds = newMotorSpeeds;
+}
 
-    float turn = map(x, 0, 1023, -maxSpeed, maxSpeed) + 7;
-    float forward = map(y, 0, 1023, -maxSpeed, maxSpeed) - 2;
+void stepMotor(Stepper motor, int motorSpeed, int steps) {
+  if (motorSpeed < 0) {
+    motor.step(-steps);
+  }
+  else if (motorSpeed > 0) {
+    motor.step(steps);
+  }
+}
 
-    //Serial.print(turn);
-    //Serial.print(" ");
-    //Serial.println(forward);
+// Calculates the speeds of two motors from the joystick input values
+Pair calculateMotorSpeeds(struct Pair input) {
+  Pair speeds;
+  int x = input.b;
+  int y = input.a;
 
-    if (abs(forward) < 7) {
-      forward = 0;
+  float turn = map(x, 0, 1023, -maxSpeed, maxSpeed) + 7;
+  float forward = map(y, 0, 1023, -maxSpeed, maxSpeed) - 2;
+
+  //Serial.print(turn);
+  //Serial.print(" ");
+  //Serial.println(forward);
+
+  if (abs(forward) < 7) {
+    forward = 0;
+  }
+  if (abs(turn) < 7) {
+    turn = 0;
+  }
+
+  //Serial.print(turn);
+  //Serial.print(" ");
+  //Serial.println(forward);
+
+  int maximum = maxSpeed;
+  int total = forward + turn;
+  int difference = forward - turn;
+
+  if (forward >= 0) {
+    if (turn > 0) {
+      speeds.a = maximum;
+      speeds.b = difference;
     }
-    if (abs(turn) < 7) {
-      turn = 0;
-    }
 
-    //Serial.print(turn);
-    //Serial.print(" ");
-    //Serial.println(forward);
-
-    int maximum = maxSpeed;
-    int total = forward + turn;
-    int difference = forward - turn;
-
-    if (forward >= 0) {
-      if (turn > 0) {
-        speeds.a = maximum;
-        speeds.b = difference;
-      }
-
-      else if (turn < 0) {
-        speeds.a = total;
-        speeds.b = maximum;
-      }
-      else {
-        speeds.a = forward;
-        speeds.b = forward;
-      }
+    else if (turn < 0) {
+      speeds.a = total;
+      speeds.b = maximum;
     }
     else {
-      if (turn >= 0) {
-        speeds.a = total;
-        speeds.b = -maximum;
-      }
-
-      else {
-        speeds.a = -maximum;
-        speeds.b = difference;
-      }
+      speeds.a = forward;
+      speeds.b = forward;
+    }
+  }
+  else {
+    if (turn >= 0) {
+      speeds.a = total;
+      speeds.b = -maximum;
     }
 
-    return speeds;
+    else {
+      speeds.a = -maximum;
+      speeds.b = difference;
+    }
   }
+
+  return speeds;
+}
