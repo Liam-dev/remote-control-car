@@ -24,7 +24,6 @@ NRFLite radio;
 Pair radioData;
 Pair sensorReadings;
 unsigned long timeSinceLastReading;
-Pair motorSpeeds;
 
 // Stepper motor initialisation.
 Stepper leftMotor = Stepper(stepsPerRevolution, 6, 8, 7, A0);
@@ -76,47 +75,31 @@ void checkRadio() {
   while (radio.hasData())
   {
     radio.readData(&radioData); // Note how '&' must be placed in front of the variable name.
-
-    //Serial.print(radioData.a);
-    //Serial.print(" ");
-    //Serial.println(radioData.b);
   }
 
-  Pair newMotorSpeeds = calculateMotorSpeeds(radioData);
-  //Serial.print(-newMotorSpeeds.a);
-  //Serial.print(" ");
-  //Serial.println(newMotorSpeeds.b);
+  Pair motorSpeeds = calculateMotorSpeeds(radioData);
+  Serial.print(-motorSpeeds.a);
+  Serial.print(" ");
+  Serial.println(motorSpeeds.b);
 
 
+  leftMotor.setSpeed(abs(motorSpeeds.a));
+  rightMotor.setSpeed(abs(motorSpeeds.b));
 
-  /*
-    if (abs(newMotorSpeeds.a - motorSpeeds.a) > 1){
-    leftMotor.setSpeed(abs(newMotorSpeeds.a));
-    }
-
-    if (abs(newMotorSpeeds.b - motorSpeeds.b) > 1){
-    rightMotor.setSpeed(abs(newMotorSpeeds.b));
-    }
-  */
-
-  leftMotor.setSpeed(abs(newMotorSpeeds.a));
-  rightMotor.setSpeed(abs(newMotorSpeeds.b));
-
-  if (newMotorSpeeds.a < 0) {
+  if (motorSpeeds.a < 0) {
     leftMotor.step(2);
   }
-  else if (newMotorSpeeds.a > 0) {
+  else if (motorSpeeds.a > 0) {
     leftMotor.step(-2);
   }
 
-  if (newMotorSpeeds.b < 0) {
+  if (motorSpeeds.b < 0) {
     rightMotor.step(-2);
   }
-  else if (newMotorSpeeds.b > 0) {
+  else if (motorSpeeds.b > 0) {
     rightMotor.step(2);
   }
 
-  //motorSpeeds = newMotorSpeeds;
 }
 
 // Calculates the speeds of two motors from the joystick input values.
