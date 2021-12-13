@@ -26,15 +26,16 @@ Pair sensorReadings;
 unsigned long timeSinceLastReading;
 Pair motorSpeeds;
 
-// Stepper motor initialisation
+// Stepper motor initialisation.
 Stepper leftMotor = Stepper(stepsPerRevolution, 6, 8, 7, A0);
 Stepper rightMotor = Stepper(stepsPerRevolution, 2, 4, 3, 5);
 
-// Ultrasonic sensor initialisation
+// Ultrasonic sensor initialisation.
 Ultrasonic ultrasonicSensor(A2);
 
 void setup() {
-  // put your setup code here, to run once:
+  // Set up pins and serial monitor.
+
   pinMode(temperaturePin, INPUT);
 
   Serial.begin(9600);
@@ -50,21 +51,23 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   checkRadio();
 
   if (millis() - timeSinceLastReading > 500) {
     timeSinceLastReading = millis();
+
     sensorReadings.a = readTemperature();
-    Serial.println(sensorReadings.a);
     sensorReadings.b = ultrasonicSensor.MeasureInCentimeters();
+    
+    Serial.println(sensorReadings.a);
+
     radio.send(receiverId, &sensorReadings, sizeof(sensorReadings));
   }
 }
 
-// Gets the temperature reading from the sensor in degrees celsius
+// Gets the temperature reading from the temperature sensor. Returns an integer value
+// in degree Celsius.
 int readTemperature() {
-  //return analogRead(temperaturePin);
   return ((5 * ((double)analogRead(temperaturePin) / 1024)) - 0.5) * 100;
 }
 
@@ -116,16 +119,7 @@ void checkRadio() {
   //motorSpeeds = newMotorSpeeds;
 }
 
-void stepMotor(Stepper motor, int motorSpeed, int steps) {
-  if (motorSpeed < 0) {
-    motor.step(-steps);
-  }
-  else if (motorSpeed > 0) {
-    motor.step(steps);
-  }
-}
-
-// Calculates the speeds of two motors from the joystick input values
+// Calculates the speeds of two motors from the joystick input values.
 Pair calculateMotorSpeeds(struct Pair input) {
   Pair speeds;
   int x = input.b;
