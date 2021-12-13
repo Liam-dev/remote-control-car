@@ -36,9 +36,8 @@ void setup() {
   // Set up pins and serial monitor.
 
   pinMode(temperaturePin, INPUT);
-
+ 
   Serial.begin(9600);
-
 
   if (!radio.init(radioId, CEPin, CSNPin))
   {

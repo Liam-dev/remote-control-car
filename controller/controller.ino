@@ -4,18 +4,15 @@
 
 const int buzzerPin = 2;
 
-int distance, temperature;
-int period = 500, time_now = 0;
+int distance;
+int temperature;
+int period = 500;
+int time_now = 0;
 
 // Pair of signed integer values.
 struct Pair {
   int a;
   int b;
-};
-
-struct RadioData // Any packet up to 32 bytes can be sent.
-{
-    uint8_t radioId;
 };
 
 const int joystickPinX = A0;
