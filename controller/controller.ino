@@ -98,7 +98,7 @@ void obstacleDetection(int distance)
     // the value is positive, we can have the buzzer play at a regular interval.
     if (sin(millis() * 10) > 0)
     {
-      tone(buzzerPin, distance*40);
+      tone(buzzerPin, distance*40); //Change tone of buzzer depending on the distance from the object
     }
     else
     {
